@@ -3,7 +3,7 @@ import random
 
 # Caldera server configuration
 CALDERA_API_URL = "http://localhost:8888/api/v2"
-CALDERA_API_KEY = "your_caldera_api_key"  # Replace with your actual API key
+CALDERA_API_KEY = "your_caldera_api_key"  # Replace with actual API key
 
 # Available adversary profiles in Caldera
 adversary_profiles = ["adversary_id_1", "adversary_id_2", "adversary_id_3"]  # Replace with actual adversary IDs
