@@ -1,0 +1,67 @@
+name: Sigma Detection Pipeline
+
+on:
+  push:
+    branches:
+      - main
+#  schedule:
+#   - cron: '0 */6 * * *'  # Runs every 6 hours
+
+env:
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+jobs:
+  simulate_attack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update && sudo apt install -y python3 python3-pip curl
+          pip install requests openai sigma-cli
+
+      - name: Run Attack Simulation in Caldera
+        run: python scripts/simulate_attack.py
+
+  fetch_logs:
+    runs-on: ubuntu-latest
+    needs: simulate_attack
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Fetch SIEM Logs from ELK
+        run: python scripts/fetch_alerts.py
+
+  generate_rule:
+    runs-on: ubuntu-latest
+    needs: fetch_logs
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Generate New Sigma Rule with ChatGPT
+        run: python scripts/generate_sigma.py
+
+      - name: Commit New Rule
+        run: |
+#          git config --global user.name "github-actions"
+#          git config --global user.email "actions@github.com"
+          git add rules/generated_rules/
+          git commit -m "Added new AI-generated Sigma rule"
+          git push origin main
+
+  deploy_rule:
+    runs-on: ubuntu-latest
+    needs: generate_rule
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Convert Sigma to Elasticsearch Query
+        run: python scripts/convert_rules.py
+
+      - name: Deploy Rule to Elastic Security
+        run: python scripts/deploy_rules.py
